@@ -1,22 +1,32 @@
 const styles = `
 :root {
-  --font-color: #5d686f;
+  --font-color: #e0e0e0; /* Bright text */
   --font-size: 1.0rem;
 
+  --main-background: #1e1e1e; /* Dark main background */
   --block-border-width: 1px;
-  --block-border-radius: 3px;
-  --block-border-color: #ededf0;
-  --block-background-color: #f7f8f8;
+  --block-border-radius: 5px;
+  --block-border-color: #333333; /* Light dark border */
+  --block-background-color: #282828; /* Comment background slightly lighter than main */
 
   --comment-indent: 40px;
 }
 
+/* Apply the dark main background to the container element */
 misskey-comments {
   font-size: var(--font-size);
+  color: var(--font-color);
+  background-color: var(--main-background);
+  padding: 15px; /* Add some padding to separate from the body */
 }
 
 p {
   margin: 0 0 1rem 0;
+  color: var(--font-color);
+}
+
+a {
+  color: #6a9fb5; /* Readable link color */
 }
 
 #misskey-stats {
@@ -27,6 +37,7 @@ p {
 #misskey-title {
   font-size: calc(var(--font-size) * 1.5);
   font-weight: bold;
+  color: #f0f0f0; /* Very light titles */
 }
 
 #misskey-comments-list {
@@ -64,6 +75,7 @@ p {
 
 .misskey-comment .author a {
   text-decoration: none;
+  color: var(--font-color); /* Light author names */
 }
 
 .misskey-comment .author .avatar img {
@@ -80,21 +92,28 @@ p {
 
 .misskey-comment .author .details .name {
   font-weight: bold;
+  color: #ffffff; /* Main username in white */
 }
 
 .misskey-comment .author .details .user {
-  color: #5d686f;
+  color: #aaaaaa; /* User handle in light grey */
   font-size: medium;
+}
+
+.misskey-comment .author .details a {
+    color: inherit; /* Ensures links use the container color */
 }
 
 .misskey-comment .author .date {
   margin-left: auto;
   font-size: small;
+  color: #888888; /* Date in soft grey */
 }
 
 .misskey-comment .content {
   margin: 15px 0;
   line-height: 1.5em;
+  color: var(--font-color);
 }
 
 .misskey-comment .author .details a,
@@ -120,20 +139,24 @@ p {
 }
 
 .misskey-comment .status a, #misskey-stats a {
-  color: #5d686f;
+  color: #888888; /* Base color for stats */
   text-decoration: none;
 }
 
 .misskey-comment .status .replies.active a, #misskey-stats .replies.active a {
-  color: #003eaa;
+  color: #61b1ff; /* Bright blue for active replies */
 }
 
 .misskey-comment .status .reblogs.active a, #misskey-stats .reblogs.active a {
-  color: #8c8dff; /* Used for Renotes */
+  color: #b28cff; /* Bright purple for active Renotes */
 }
 
 .misskey-comment .status .favourites.active a, #misskey-stats .favourites.active a {
-  color: #ca8f04; /* Used for Reactions */
+  color: #ffc461; /* Bright yellow/orange for active Reactions */
+}
+
+#error {
+    color: #ff6161; /* Color for error/noscript messages */
 }
 `;
 
@@ -363,8 +386,6 @@ class MisskeyComments extends HTMLElement {
 
     let _this = this;
     
-    // Misskey API requires two separate calls to get stats and context easily.
-
     // 1. Fetch the main note for its stats (reactions/renotes/repliesCount)
     fetch(`https://${this.host}/api/notes/show`, {
         method: 'POST',
