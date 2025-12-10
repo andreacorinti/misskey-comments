@@ -17,7 +17,7 @@ misskey-comments {
   font-size: var(--font-size);
   color: var(--font-color);
   background-color: var(--main-background);
-  padding: 15px; /* Add some padding to separate from the body */
+  padding: 15px; 
 }
 
 p {
@@ -37,7 +37,7 @@ a {
 #misskey-title {
   font-size: calc(var(--font-size) * 1.5);
   font-weight: bold;
-  color: #f0f0f0; /* Very light titles */
+  color: #f0f0f0; 
 }
 
 #misskey-comments-list {
@@ -75,7 +75,7 @@ a {
 
 .misskey-comment .author a {
   text-decoration: none;
-  color: var(--font-color); /* Light author names */
+  color: var(--font-color); 
 }
 
 .misskey-comment .author .avatar img {
@@ -92,22 +92,22 @@ a {
 
 .misskey-comment .author .details .name {
   font-weight: bold;
-  color: #ffffff; /* Main username in white */
+  color: #ffffff; 
 }
 
 .misskey-comment .author .details .user {
-  color: #aaaaaa; /* User handle in light grey */
+  color: #aaaaaa; 
   font-size: medium;
 }
 
 .misskey-comment .author .details a {
-    color: inherit; /* Ensures links use the container color */
+    color: inherit; 
 }
 
 .misskey-comment .author .date {
   margin-left: auto;
   font-size: small;
-  color: #888888; /* Date in soft grey */
+  color: #888888; 
 }
 
 .misskey-comment .content {
@@ -139,24 +139,24 @@ a {
 }
 
 .misskey-comment .status a, #misskey-stats a {
-  color: #888888; /* Base color for stats */
+  color: #888888; 
   text-decoration: none;
 }
 
 .misskey-comment .status .replies.active a, #misskey-stats .replies.active a {
-  color: #61b1ff; /* Bright blue for active replies */
+  color: #61b1ff; 
 }
 
 .misskey-comment .status .reblogs.active a, #misskey-stats .reblogs.active a {
-  color: #b28cff; /* Bright purple for active Renotes */
+  color: #b28cff; 
 }
 
 .misskey-comment .status .favourites.active a, #misskey-stats .favourites.active a {
-  color: #ffc461; /* Bright yellow/orange for active Reactions */
+  color: #ffc461; 
 }
 
 #error {
-    color: #ff6161; /* Color for error/noscript messages */
+    color: #ff6161; 
 }
 `;
 
@@ -166,7 +166,7 @@ class MisskeyComments extends HTMLElement {
 
     this.host = this.getAttribute("host");
     this.user = this.getAttribute("user");
-    this.noteId = this.getAttribute("noteId"); // Using noteId for Misskey
+    this.noteId = this.getAttribute("noteId"); 
 
     this.commentsLoaded = false;
 
@@ -357,24 +357,32 @@ class MisskeyComments extends HTMLElement {
         ? DOMPurify.sanitize(misskeyComment.trim())
         : misskeyComment.trim();
         
-    // Logic to insert comment in the list or nested list
+    // --- START: Updated logic for Threading/Nesting ---
     if (note.replyId === this.noteId) {
+        // This is a top-level reply to the main post
         document.getElementById("misskey-comments-list").appendChild(li);
     } else {
-        const parentNote = notes.find(n => n.id === note.replyId);
-        if (parentNote) {
-            let parentElement = document.getElementById(note.replyId);
-            if (parentElement) {
-                let ul = parentElement.querySelector('ul');
-                if (!ul) {
-                    ul = document.createElement('ul');
-                    parentElement.appendChild(ul);
-                }
-                ul.appendChild(li);
+        // This is a reply to another comment (nested)
+        let parentElement = document.getElementById(note.replyId);
+        if (parentElement) {
+            let ul = parentElement.querySelector('ul');
+            if (!ul) {
+                // If the parent comment doesn't have a reply list yet, create one
+                ul = document.createElement('ul');
+                parentElement.appendChild(ul);
             }
+            ul.appendChild(li);
+        } else {
+            // Fallback: If parent comment wasn't found (e.g. out of scope/limit),
+            // append to the main list (or ignore if strict threading is required)
+            // For now, append to main list to avoid losing comments.
+            document.getElementById("misskey-comments-list").appendChild(li); 
         }
     }
+    // --- END: Updated logic for Threading/Nesting ---
 
+
+    // Recursive call to render replies to THIS comment
     this.render_notes(notes, note.id);
   }
 
@@ -395,58 +403,3 @@ class MisskeyComments extends HTMLElement {
     .then((response) => response.json())
     .then((note) => {
         if (note && note.id) {
-            document.getElementById("misskey-stats").innerHTML =
-                this.note_stats(note);
-        }
-    })
-    .catch(error => console.error("Error loading Misskey stats:", error));
-
-
-    // 2. Fetch the replies (the comments context)
-    fetch(
-      `https://${this.host}/api/notes/replies`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            noteId: this.noteId,
-            limit: 100 
-        })
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        // Misskey returns an array of notes (the descendants) directly
-        if (Array.isArray(data) && data.length > 0) {
-          document.getElementById("misskey-comments-list").innerHTML = "";
-          _this.render_notes(data, _this.noteId);
-        } else {
-          document.getElementById("misskey-comments-list").innerHTML =
-            "<p>No comments found</p>";
-        }
-
-        _this.commentsLoaded = true;
-      })
-      .catch(error => {
-          console.error("Error loading Misskey comments:", error);
-          document.getElementById("misskey-comments-list").innerHTML =
-            "<p>Error loading comments from Misskey.</p>";
-      });
-  }
-
-  respondToVisibility(element, callback) {
-    var options = {
-      root: null,
-    };
-
-    var observer = new IntersectionObserver((entries, observer) => {
-      entries.forEach((entry) => {
-        if (entry.intersectionRatio > 0) {
-          callback();
-        }
-      });
-    }, options);
-
-    observer.observe(element);
-  }
-}
-
-customElements.define("misskey-comments", MisskeyComments);
