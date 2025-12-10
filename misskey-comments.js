@@ -76,9 +76,9 @@ class MisskeyComments extends HTMLElement {
 
   connectedCallback() {
     this.innerHTML = `
-      <h2>Commenti</h2>
-      <noscript><div id="error">Per visualizzare i commenti abilita JavaScript.</div></noscript>
-      <p>Puoi commentare dal Fediverso rispondendo a <a href="https://${this.host}/notes/${this.noteId}">questo post</a>.</p>
+      <h2>Comments</h2>
+      <noscript><div id="error">Please enable JavaScript to view the comments powered by the Fediverse.</div></noscript>
+      <p>You can comment with a Fediverse account replying at <a href="https://${this.host}/notes/${this.noteId}">this post</a>.</p>
       <div id="misskey-comments-list"></div>
     `;
 
@@ -99,10 +99,15 @@ class MisskeyComments extends HTMLElement {
     return `@${u.username}${u.host ? '@' + u.host : ''}`;
   }
 
+  profileUrl(u) {
+  const host = u.host || this.host;
+  return `https://${host}/@${u.username}${u.host ? '@' + u.host : ''}`;
+  } // prendo l'url dell'account in modo da linkarlo nel nick
+
   async loadComments() {
     if (this.commentsLoaded) return;
     const container = document.getElementById("misskey-comments-list");
-    container.innerHTML = "Caricamento commenti...";
+    container.innerHTML = "Loading comments...";
 
     try {
       let rootReplies = await this.fetchReplies(this.noteId);
@@ -119,8 +124,8 @@ class MisskeyComments extends HTMLElement {
       this.commentsLoaded = true;
 
     } catch (err) {
-      console.error("Errore:", err);
-      container.innerHTML = "<p>Errore nel caricamento dei commenti Misskey.</p>";
+      console.error("Error:", err);
+      container.innerHTML = "<p>Error loading Misskey comments.</p>";
     }
   }
 
@@ -178,8 +183,8 @@ class MisskeyComments extends HTMLElement {
         <div class="author">
           <div class="avatar"><img src="${note.user.avatarUrl}" width="60"></div>
           <div class="details">
-            <a class="name" href="${note.user.url}">${userName}</a>
-            <a class="user" href="${note.user.url}">${this.user_account(note.user)}</a>
+            <a class="name" href="${this.profileUrl(note.user)}"">${userName}</a>
+            <a class="user" href="${this.profileUrl(note.user)}"">${this.user_account(note.user)}</a>
           </div>
           <a class="date" href="https://${this.host}/notes/${note.id}">
             <time datetime="${note.createdAt}">${new Date(note.createdAt).toLocaleString("it-IT")}</time>
